@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email and Password Auth - SM Transport</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" />
+    <style>
+      /* Reset */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      /* Fullscreen video background styling */
+      .background-video {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        z-index: -2;
+      }
+
+      /* Overlay for contrast with video */
+      .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: -1;
+      }
+
+      /* Centered content container */
+      .app {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        min-height: 100vh;
+        color: #fff;
+        padding: 20px;
+      }
+
+      /* Organization title styling */
+      .org-name {
+        font-family: "Montserrat", sans-serif;
+        font-size: 3rem;
+        font-weight: bold;
+        color: #ffd700;
+        letter-spacing: 2px;
+        margin-bottom: 20px;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+      }
+
+      /* Form container styling */
+      .form-container {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        width: 100%;
+        max-width: 400px;
+      }
+
+      /* Input styling */
+      .input-field {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 20px;
+        border: 1px solid #ffd700;
+        border-radius: 6px;
+        background-color: #333;
+        color: #fff;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+      }
+
+      .input-field:focus {
+        outline: none;
+        border-color: #ffb700;
+      }
+
+      /* Button styling */
+      .button {
+        padding: 12px 24px;
+        font-size: 1rem;
+        font-weight: bold;
+        color: #333;
+        background-color: #ffd700;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.3s;
+        margin-bottom: 10px; /* Spacing between buttons */
+        width: 100%;
+      }
+
+      .button:hover {
+        background-color: #ffb700;
+        transform: translateY(-2px);
+      }
+
+      /* Footer styling */
+      .app-footer {
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: #bbb;
+      }
+
+      /* Error message styling */
+      .error-message {
+        color: red;
+        margin: 10px 0;
+        font-size: 0.9em;
+      }
+
+      /* Link styling */
+      .link {
+        color: #ffd700;
+        text-decoration: none;
+        font-size: 0.9em;
+      }
+
+      .link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Background Video -->
+    <video autoplay muted loop class="background-video">
+      <source src="tataace.mp4" type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+
+    <!-- Dark overlay for better text contrast -->
+    <div class="overlay"></div>
+
+    <!-- Centered content -->
+    <div class="app">
+      <h1 class="org-name">SM Transport</h1>
+      <div class="form-container">
+        <input type="email" id="email" class="input-field" placeholder="Email" required />
+        <input type="password" id="password" class="input-field" placeholder="Password" required />
+
+        <div id="error-message" class="error-message"></div>
+
+        <button class="button" onclick="loginUser()">Login</button>
+        <button class="button" onclick="signupUser()">Sign Up</button>
+
+        <p class="app-footer">
+          <a href="#" class="link">Forgot Password?</a>
+        </p>
+      </div>
+
+      <footer class="app-footer">
+        <p id="footerText"></p> <!-- Placeholder for year -->
+      </footer>
+    </div>
+
+    <!-- Firebase App (the core Firebase SDK) is always required -->
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+      import {
+        getAuth,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        sendEmailVerification,
+      } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        setDoc,
+        getDoc,
+      } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+      import {
+        getDatabase,
+        ref,
+        set,
+      } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js"; // Import Realtime Database functions
+
+      // Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyBjjs6x3rsh7T5uBPG89WeKouJkwV4upXI",
+        authDomain: "sm-transport-c5e3a.firebaseapp.com",
+        projectId: "sm-transport-c5e3a",
+        storageBucket: "sm-transport-c5e3a.appspot.com",
+        messagingSenderId: "19060822413",
+        appId: "1:19060822413:web:d0ec393684bb3734d32dc4",
+        measurementId: "G-2G8CJD52DP",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      const rtdb = getDatabase(app); // Initialize Realtime Database
+
+      // Function to handle user signup
+      window.signupUser = async function () {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const errorMessage = document.getElementById("error-message");
+
+        errorMessage.textContent = ""; // Clear previous error messages
+
+        try {
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          const user = userCredential.user;
+
+          // Send verification email
+          const actionCodeSettings = {
+            url: "http://localhost:5500/verify.html?uid=" + user.uid, // Include the user ID in the URL
+            handleCodeInApp: true,
+          };
+          await sendEmailVerification(user, actionCodeSettings);
+
+          // Add user to Firestore with 'verified' and 'superVerified' fields
+          await setDoc(doc(db, "users", user.uid), {
+            email: user.email,
+            verified: false, // Default to false until user verifies their email
+            superVerified: false, // Add super verification field
+          });
+
+          // Also add user to Realtime Database
+          await set(ref(rtdb, "users/" + user.uid), {
+            email: user.email,
+            verified: false,
+            superVerified: false, // Ensure superVerified is initialized
+          });
+
+          errorMessage.textContent =
+            "Signup successful! Please check your email for verification."; // Feedback to user
+        } catch (error) {
+          errorMessage.textContent = error.message; // Display error message
+        }
+      };
+
+      // Function to handle user login
+      window.loginUser = async function () {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const errorMessage = document.getElementById("error-message");
+
+        errorMessage.textContent = ""; // Clear previous error messages
+
+        try {
+          const userCredential = await signInWithEmailAndPassword(auth, email, password);
+          const user = userCredential.user;
+
+          // Check if the user document exists in Firestore
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            // Check if the user is verified
+            if (userDoc.data().verified) {
+              window.location.href = "home.html"; // Redirect to home page if verified
+            } else {
+              errorMessage.textContent =
+                "You need to verify your email before logging in."; // Notify user
+              await auth.signOut(); // Sign out the user
+            }
+          } else {
+            errorMessage.textContent = "User document not found."; // Handle missing user document
+          }
+        } catch (error) {
+          errorMessage.textContent = error.message; // Display error message
+        }
+      };
+
+      // Set the current year in the footer
+      document.getElementById("footerText").textContent = `© ${new Date().getFullYear()} SM Transport. All rights reserved.`;
+    </script>
+  </body>
+</html>

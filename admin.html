@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Upload Vehicle Files</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: #f3f4f7;
+            color: #333;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #FFD700;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-container {
+            max-width: 600px;
+            margin: auto;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"], input[type="url"], input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .upload-btn {
+            background-color: #FFD700;
+            color: #333;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin Panel - Upload Vehicle Files</h1>
+    <div class="form-container">
+        <div id="message" class="message" style="display:none;"></div>
+
+        <div class="form-group">
+            <label for="vehicleName">Vehicle Name:</label>
+            <input type="text" id="vehicleName" placeholder="Enter vehicle name">
+        </div>
+        
+        <div class="form-group">
+            <label for="rcFile">RC Document (Upload or URL):</label>
+            <input type="text" id="rcUrl" placeholder="Enter RC URL">
+            <input type="file" id="rcFile" accept="application/pdf,image/*">
+        </div>
+
+        <div class="form-group">
+            <label for="insuranceFile">Insurance Document (Upload or URL):</label>
+            <input type="text" id="insuranceUrl" placeholder="Enter Insurance URL">
+            <input type="file" id="insuranceFile" accept="application/pdf,image/*">
+        </div>
+
+        <div class="form-group">
+            <label for="fitnessFile">Fitness Document (Upload or URL):</label>
+            <input type="text" id="fitnessUrl" placeholder="Enter Fitness URL">
+            <input type="file" id="fitnessFile" accept="application/pdf,image/*">
+        </div>
+
+        <div class="form-group">
+            <label for="pollutionFile">Pollution Document (Upload or URL):</label>
+            <input type="text" id="pollutionUrl" placeholder="Enter Pollution URL">
+            <input type="file" id="pollutionFile" accept="application/pdf,image/*">
+        </div>
+
+        <button class="upload-btn" onclick="uploadFiles()">Upload Files</button>
+    </div>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBjjs6x3rsh7T5uBPG89WeKouJkwV4upXI",
+            authDomain: "sm-transport-c5e3a.firebaseapp.com",
+            projectId: "sm-transport-c5e3a",
+            storageBucket: "sm-transport-c5e3a.appspot.com",
+            messagingSenderId: "19060822413",
+            appId: "1:19060822413:web:d0ec393684bb3734d32dc4",
+            measurementId: "G-2G8CJD52DP"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage(); // Initialize Firebase Storage
+
+        // Check if the user is authenticated and has superVerified status
+        auth.onAuthStateChanged(async user => {
+            if (!user) {
+                window.location.href = "login.html"; // Redirect to login if not authenticated
+            } else {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (!userDoc.exists || !userDoc.data().superVerified) {
+                    window.location.href = "index.html"; // Redirect to home or appropriate page if not superVerified
+                }
+            }
+        });
+
+        async function uploadFiles() {
+            const vehicleName = document.getElementById("vehicleName").value;
+            const rcFile = document.getElementById("rcFile").files[0];
+            const rcUrl = document.getElementById("rcUrl").value;
+            const insuranceFile = document.getElementById("insuranceFile").files[0];
+            const insuranceUrl = document.getElementById("insuranceUrl").value;
+            const fitnessFile = document.getElementById("fitnessFile").files[0];
+            const fitnessUrl = document.getElementById("fitnessUrl").value;
+            const pollutionFile = document.getElementById("pollutionFile").files[0];
+            const pollutionUrl = document.getElementById("pollutionUrl").value;
+
+            if (!vehicleName) {
+                showMessage("Please enter the vehicle name.", "error");
+                return;
+            }
+
+            try {
+                const fileData = {
+                    vehicleName: vehicleName,
+                    rcUrl: rcUrl,
+                    insuranceUrl: insuranceUrl,
+                    fitnessUrl: fitnessUrl,
+                    pollutionUrl: pollutionUrl,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                // Add RC file if provided
+                if (rcFile) {
+                    const rcFileUrl = await uploadFile(rcFile);
+                    fileData.rcUrl = rcFileUrl;
+                }
+
+                // Add Insurance file if provided
+                if (insuranceFile) {
+                    const insuranceFileUrl = await uploadFile(insuranceFile);
+                    fileData.insuranceUrl = insuranceFileUrl;
+                }
+
+                // Add Fitness file if provided
+                if (fitnessFile) {
+                    const fitnessFileUrl = await uploadFile(fitnessFile);
+                    fileData.fitnessUrl = fitnessFileUrl;
+                }
+
+                // Add Pollution file if provided
+                if (pollutionFile) {
+                    const pollutionFileUrl = await uploadFile(pollutionFile);
+                    fileData.pollutionUrl = pollutionFileUrl;
+                }
+
+                // Save data to Firestore
+                await db.collection('vehicleFiles').add(fileData);
+                showMessage("Files uploaded successfully!", "success");
+            } catch (error) {
+                console.error("Error uploading files: ", error);
+                showMessage("Error uploading files: " + error.message, "error");
+            }
+        }
+
+        async function uploadFile(file) {
+            const storageRef = storage.ref(); // Use the initialized storage instance
+            const fileRef = storageRef.child(`vehicleFiles/${file.name}`);
+            await fileRef.put(file);
+            return await fileRef.getDownloadURL();
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById("message");
+            messageDiv.innerHTML = message;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = "block";
+        }
+    </script>
+</body>
+</html>
