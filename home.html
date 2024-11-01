@@ -65,19 +65,20 @@
         font-size: 1.5rem;
         color: #ffd700;
         cursor: pointer;
+        z-index: 10; /* Ensure profile icon is above the background */
       }
 
       .dropdown-menu {
         display: none;
         position: absolute;
-        top: 70px;
+        top: 70px; /* Keep this to control vertical position */
         right: 20px;
         background-color: white;
         border: 1px solid #ccc;
         border-radius: 5px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         overflow: hidden;
-        z-index: 10;
+        z-index: 20; /* Increase z-index to ensure it's above the slider images */
       }
 
       .dropdown-menu a {
@@ -103,6 +104,7 @@
         overflow: hidden;
         border-radius: 10px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        z-index: 1; /* Lower z-index than dropdown */
       }
 
       .slides {
@@ -127,12 +129,12 @@
       /* Card Container */
       .card-container {
         display: flex;
-        justify-content: center; /* Center the cards */
-        align-items: flex-start; /* Align cards at the start */
+        flex-wrap: wrap; /* Allow wrapping of cards */
+        justify-content: center;
+        align-items: flex-start;
         margin-top: 20px;
-        padding: 20px; /* Add padding to the container */
-        overflow: hidden; /* Hide scrollbar and prevent overflow */
-        white-space: nowrap; /* Prevent line breaks */
+        padding: 20px;
+        overflow: hidden;
       }
 
       /* Folder Card Styling */
@@ -142,14 +144,14 @@
         align-items: center;
         background-color: rgba(255, 255, 255, 0.1);
         border-radius: 10px;
-        padding: 15px; /* Adjusted padding for more space */
-        width: 180px; /* Adjusted width for better fit */
-        height: 180px; /* Adjusted height for better fit */
+        padding: 15px;
+        width: 180px; /* Keep this width, but adjust max-width for smaller screens */
+        height: 180px; /* Keep height consistent */
         text-align: center;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
         cursor: pointer;
         transition: transform 0.3s;
-        margin: 0 15px; /* Margin for spacing between cards */
+        margin: 15px; /* Adjusted margin for spacing */
       }
 
       .folder-card:hover {
@@ -166,7 +168,7 @@
         font-weight: bold;
         color: #ffd700;
         margin-top: 10px;
-        padding: 0 10px; /* Padding to ensure text doesn't touch edges */
+        padding: 0 10px;
       }
 
       /* Responsive Design */
@@ -177,12 +179,12 @@
 
         .slider {
           max-width: 90%;
-          height: 300px;
+          height: auto; /* Make height responsive */
         }
 
         .folder-card {
-          width: 150px; /* Adjusted width for smaller screens */
-          height: 150px; /* Adjusted height for smaller screens */
+          width: 150px;
+          height: 150px;
         }
 
         .folder-title {
@@ -200,7 +202,7 @@
         }
 
         .slider {
-          height: 150px;
+          height: 150px; /* Keep this or adjust if needed */
         }
       }
     </style>
@@ -226,13 +228,14 @@
       // Logout function
       function logout() {
         console.log("Logout function called"); // Debugging line
-        auth
-          .signOut() // Use 'auth' after ensuring it's initialized
+        auth.signOut()
           .then(() => {
+            console.log("Successfully logged out"); // Debugging line
             alert("Successfully logged out!");
             window.location.href = "index.html"; // Redirect to homepage after logout
           })
           .catch((error) => {
+            console.error("Error logging out:", error); // Debugging line
             alert("Error logging out: " + error.message);
           });
       }
@@ -316,21 +319,19 @@
       <div class="folder-card" onclick="location.href='files.html'">
         <div class="folder-icon">📂</div>
         <div class="folder-title">My Documents</div>
-    </div>
-    <div class="folder-card">
+      </div>
+      <div class="folder-card">
         <div class="folder-icon">📂</div>
         <div class="folder-title">Shared Files</div>
-    </div>
-    <div class="folder-card">
+      </div>
+      <div class="folder-card">
         <div class="folder-icon">📂</div>
         <div class="folder-title">Vehicle History</div>
-    </div>
-    <div class="folder-card">
+      </div>
+      <div class="folder-card">
         <div class="folder-icon">📂</div>
         <div class="folder-title">Client Data</div>
+      </div>
     </div>
-</div>
-</body>
-</html>
   </body>
 </html>
